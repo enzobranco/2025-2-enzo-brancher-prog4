@@ -1,2 +1,0 @@
-O que é chart.js?
-Chart.js é uma biblioteca JavaScript de código aberto que permite a criação de gráficos interativos e visualizações de dados em aplicações web.
