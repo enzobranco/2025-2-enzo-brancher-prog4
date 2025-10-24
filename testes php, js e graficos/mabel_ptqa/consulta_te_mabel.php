@@ -21,7 +21,6 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
