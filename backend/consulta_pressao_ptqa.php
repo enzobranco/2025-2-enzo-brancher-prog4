@@ -7,11 +7,12 @@ $data_final   = $_GET['fim'] ?? '2025-06-30';
 
 // Consulta SQL — busca a data e a temperatura interna
 $sql = "SELECT 
-          CONCAT(datainclusao, ' ', horainclusao) AS datahora_completa,
-          ninho
-        FROM leituramabel
-        WHERE datainclusao BETWEEN :inicio AND :fim
-        ORDER BY datainclusao, horainclusao ASC";
+          CONCAT(dataleitura, ' ', horaleitura) AS datahora_completa,
+          pressao
+        FROM leituraptqa
+        WHERE dataleitura BETWEEN :inicio AND :fim
+            AND pressao < 1000
+        ORDER BY dataleitura, horaleitura ASC";
 
 $stmt = $conecta->prepare($sql);
 $stmt->execute([':inicio' => $data_inicial, ':fim' => $data_final]);
@@ -29,7 +30,7 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Consulta de Temperatura do Ninho- MABEL</title>
+  <title>Consulta de registros: pressão atmosférica menor que 1000 hPa- PTQA</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; }
     table { border-collapse: collapse; width: 60%; margin-top: 20px; }
@@ -38,7 +39,7 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   </style>
 </head>
 <body>
-  <h2>Temperatura do Ninho (Campo: ninho)</h2>
+  <h2>Registros: pressão atmosférica menor que 1000 hPa</h2>
 
   <!-- Filtro de data -->
   <form method="get">
@@ -53,14 +54,14 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   <table>
     <tr>
       <th>Data e Hora</th>
-      <th>Temperatura do Ninho(°C)</th>
+      <th>Registros: pressão atmosférica menor que 1000 hPa- PTQA</th>
     </tr>
 
     <?php if (count($resultado) > 0): ?>
       <?php foreach ($resultado as $linha): ?>
         <tr>
           <td><?php echo htmlspecialchars($linha['datahora_completa']); ?></td>
-          <td><?php echo htmlspecialchars($linha['ninho']); ?></td>
+          <td><?php echo htmlspecialchars($linha['pressao']); ?></td>
         </tr>
       <?php endforeach; ?>
     <?php else: ?>

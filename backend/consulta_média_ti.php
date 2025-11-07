@@ -1,35 +1,29 @@
 <?php
 include 'conecta_mysql.php';
 
-// Define o período (com valores padrão)
+// Define o período padrão (caso o usuário não selecione)
 $data_inicial = $_GET['inicio'] ?? '2025-06-01';
 $data_final   = $_GET['fim'] ?? '2025-06-30';
 
-// Consulta SQL — busca a data e a temperatura interna
+// Consulta SQL — média diária da temperatura interna
 $sql = "SELECT 
-          CONCAT(datainclusao, ' ', horainclusao) AS datahora_completa,
-          ninho
+          datainclusao,
+          ROUND(AVG(ti), 2) AS media_diaria_ti
         FROM leituramabel
         WHERE datainclusao BETWEEN :inicio AND :fim
-        ORDER BY datainclusao, horainclusao ASC";
+        GROUP BY datainclusao
+        ORDER BY datainclusao ASC;";
 
 $stmt = $conecta->prepare($sql);
 $stmt->execute([':inicio' => $data_inicial, ':fim' => $data_final]);
 $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Se for pedido no formato JSON (para o gráfico no futuro)
-if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
-  header('Content-Type: application/json; charset=utf-8');
-  echo json_encode($resultado);
-  exit;
-}
 ?>
 
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Consulta de Temperatura do Ninho- MABEL</title>
+  <title>Média Diária da Temperatura Interna - MABEL</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; }
     table { border-collapse: collapse; width: 60%; margin-top: 20px; }
@@ -38,7 +32,7 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   </style>
 </head>
 <body>
-  <h2>Temperatura do Ninho (Campo: ninho)</h2>
+  <h2>Média Diária da Temperatura Interna (Campo: ti)</h2>
 
   <!-- Filtro de data -->
   <form method="get">
@@ -49,18 +43,18 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
     <button type="submit">Filtrar</button>
   </form>
 
-  <!-- Tabela com os resultados -->
+  <!-- Tabela de resultados -->
   <table>
     <tr>
-      <th>Data e Hora</th>
-      <th>Temperatura do Ninho(°C)</th>
+      <th>Data</th>
+      <th>Média Diária (°C)</th>
     </tr>
 
-    <?php if (count($resultado) > 0): ?>
+    <?php if ($resultado && count($resultado) > 0): ?>
       <?php foreach ($resultado as $linha): ?>
         <tr>
-          <td><?php echo htmlspecialchars($linha['datahora_completa']); ?></td>
-          <td><?php echo htmlspecialchars($linha['ninho']); ?></td>
+          <td><?php echo htmlspecialchars($linha['datainclusao']); ?></td>
+          <td><?php echo htmlspecialchars($linha['media_diaria_ti']); ?></td>
         </tr>
       <?php endforeach; ?>
     <?php else: ?>

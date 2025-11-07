@@ -5,19 +5,21 @@ include 'conecta_mysql.php';
 $data_inicial = $_GET['inicio'] ?? '2025-06-01';
 $data_final   = $_GET['fim'] ?? '2025-06-30';
 
-// Consulta SQL — busca a data e a temperatura interna
+// Consulta SQL — média de gases voláteis (TVOC) agrupada pelo índice de qualidade do ar (AQI)
 $sql = "SELECT 
-          CONCAT(datainclusao, ' ', horainclusao) AS datahora_completa,
-          ninho
-        FROM leituramabel
-        WHERE datainclusao BETWEEN :inicio AND :fim
-        ORDER BY datainclusao, horainclusao ASC";
+          aqi,
+          AVG(tvoc) AS media_tvoc
+        FROM leituraptqa
+        WHERE dataleitura BETWEEN :inicio AND :fim
+          AND tvoc IS NOT NULL
+        GROUP BY aqi
+        ORDER BY aqi ASC";
 
 $stmt = $conecta->prepare($sql);
 $stmt->execute([':inicio' => $data_inicial, ':fim' => $data_final]);
 $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Se for pedido no formato JSON (para o gráfico no futuro)
+// Caso o usuário queira o resultado em JSON (para gráfico futuramente)
 if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   header('Content-Type: application/json; charset=utf-8');
   echo json_encode($resultado);
@@ -29,7 +31,7 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Consulta de Temperatura do Ninho- MABEL</title>
+  <title>Média de gases voláteis por índice de qualidade do ar </title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; }
     table { border-collapse: collapse; width: 60%; margin-top: 20px; }
@@ -38,7 +40,7 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   </style>
 </head>
 <body>
-  <h2>Temperatura do Ninho (Campo: ninho)</h2>
+  <h2>Média de gases voláteis agrupada por índice de qualidade do ar</h2>
 
   <!-- Filtro de data -->
   <form method="get">
@@ -52,15 +54,15 @@ if (isset($_GET['formato']) && $_GET['formato'] === 'json') {
   <!-- Tabela com os resultados -->
   <table>
     <tr>
-      <th>Data e Hora</th>
-      <th>Temperatura do Ninho(°C)</th>
+      <th>Índice de Qualidade do Ar</th>
+      <th>Média de Gases Voláteis</th>
     </tr>
 
     <?php if (count($resultado) > 0): ?>
       <?php foreach ($resultado as $linha): ?>
         <tr>
-          <td><?php echo htmlspecialchars($linha['datahora_completa']); ?></td>
-          <td><?php echo htmlspecialchars($linha['ninho']); ?></td>
+          <td><?php echo htmlspecialchars($linha['aqi']); ?></td>
+          <td><?php echo number_format($linha['media_tvoc'], 2, ',', '.'); ?></td>
         </tr>
       <?php endforeach; ?>
     <?php else: ?>
