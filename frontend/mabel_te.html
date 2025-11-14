@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gráfico de Temperatura Externa - MABEL</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="script.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+  <form id="formPeriodo">
+    <label>Início: <input type="date" id="inicio"></label>
+    <label>Fim: <input type="date" id="fim"></label>
+    <button type="submit">Gerar Gráfico</button>
+  </form>
+
+    <!-- Aqui mostra a média -->
+  <div id="mediaContainer" class="media-box">
+    <strong>Média da Temperatura Externa:</strong> <span id="valorMedia">--</span> °C
+  </div>
+    <!-- Aqui mostra a diferença média -->
+  <div>
+  <strong>Diferença média (TI − TE):</strong>
+  <span id="valorMediaDif">--</span> °C
+</div>
+    <!-- gráfico -->
+  
+  <h2>Gráfico da Temperatura Externa</h2>
+  <canvas id="graficoTemperatura"></canvas>
+
+
+</body>
+</html>
