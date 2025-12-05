@@ -1,59 +1,82 @@
-// Espera o carregamento da página
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("load", () => {
     const loading = document.getElementById("loading");
     const canvas = document.getElementById("graficoAqi");
-  
-    // Busca JSON com os dados do PHP
-    fetch(`ptqa_aqi.php?inicio=${dataInicial}&fim=${dataFinal}&formato=json`)
-      .then(res => res.json())
-      .then(dados => {
-        loading.style.display = "none";
-  
-        if (dados.length === 0) {
-          loading.style.display = "block";
-          loading.textContent = "Nenhum registro encontrado no período selecionado.";
-          return;
-        }
-  
-        const labels = dados.map(d => d.datahora_completa);
-        const valores = dados.map(d => parseFloat(d.aqi));
-  
-        const ctx = canvas.getContext("2d");
-        new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "Índice de Qualidade do Ar (AQI)",
-              data: valores,
-              borderColor: "rgba(30, 164, 78, 1)",
-              backgroundColor: "rgba(30, 164, 78, 0.2)",
-              fill: true,
-              tension: 0.3,
-              pointRadius: 3
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: {
-                title: { display: true, text: "Data e Hora" },
-                ticks: { autoSkip: true, maxTicksLimit: 10 }
-              },
-              y: {
-                title: { display: true, text: "AQI" },
-                beginAtZero: true
-              }
-            },
-            plugins: {
-              legend: { display: true, position: "top" },
-              title: { display: true, text: "Evolução dos valores de AQI (≥4)" }
-            }
-          }
+    const intervaloInput = document.getElementById("intervalo");
+    let chartAqi = null;
+
+    //converte as datas no formato brasileiro
+
+    function converterParaDateBrasil(dataStr) {
+        const [data, hora] = dataStr.split(" ");
+        const [dia, mes, ano] = data.split("/");
+        const [h, m, s] = hora.split(":");
+        return new Date(`${ano}-${mes}-${dia}T${h}:${m}:${s}`);
+    }
+
+    function formatarLabelBR(dataStr) {
+        const d = converterParaDateBrasil(dataStr);
+        return d.toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
         });
-      })
-      .catch(() => {
-        loading.textContent = "Erro ao carregar dados.";
-      });
-  });
-  
+    }
+
+    // AGORA FUNCIONA — intervalo lido corretamente
+    const intervaloUsado = parseInt(intervaloInput.value) || 20;
+
+//pega dados php
+    fetch(`ptqa_aqi.php?inicio=${dataInicial}&fim=${dataFinal}&formato=json`)
+        .then(res => res.json())
+        .then(dados => {
+
+            loading.style.display = "none";
+
+            if (!dados.ruim || dados.ruim.length === 0) {
+                loading.style.display = "block";
+                loading.textContent = "Nenhum registro AQI ≥ 4 encontrado no período.";
+                return;
+            }
+
+            const labelsBruto = dados.ruim.map(r => r.datahora_completa);
+            const valoresBruto = dados.ruim.map(r => parseFloat(r.aqi));
+
+            const labelsFiltrados = labelsBruto
+                .filter((_, i) => i % intervaloUsado === 0)
+                .map(s => formatarLabelBR(s));
+
+            const valoresFiltrados = valoresBruto
+                .filter((_, i) => i % intervaloUsado === 0);
+
+            if (chartAqi) chartAqi.destroy();
+
+            const ctx = canvas.getContext("2d");
+            chartAqi = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labelsFiltrados,
+                    datasets: [{
+                        label: "Baixa Qualidade do Ar (AQI ≥ 4)",
+                        data: valoresFiltrados,
+                        borderColor: "rgba(200,50,50,1)",
+                        backgroundColor: "rgba(200,50,50,0.2)",
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: "Data e Hora (BR)" } },
+                        y: { title: { display: true, text: "AQI" }, beginAtZero: true }
+                    }
+                }
+            });
+        })
+        .catch(() => {
+            loading.textContent = "Erro ao carregar dados.";
+        });
+});
